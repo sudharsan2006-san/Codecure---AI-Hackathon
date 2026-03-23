@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindLens — Mental Health Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6960;
+    --text-muted: #a09e96;
+    --accent: #3d5a80;
+    --accent-light: #e8edf5;
+    --accent2: #98c1d9;
+    --positive: #4a8c6f;
+    --warning: #c07a3a;
+    --negative: #8c4a4a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+  }
+
+  .logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { width: 18px; height: 18px; fill: white; }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-section {
+    padding: 20px 24px 0;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .analysis-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .analysis-card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .meter {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .meter-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .sentiment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  .badge-neutral { background: #eee; color: var(--text-secondary); }
+  .badge-positive { background: #e8f5ef; color: var(--positive); }
+  .badge-negative { background: #f5e8e8; color: var(--negative); }
+  .badge-anxious { background: #fef3e8; color: var(--warning); }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .dot-positive { background: var(--positive); }
+  .dot-negative { background: var(--negative); }
+  .dot-neutral { background: var(--text-muted); }
+  .dot-anxious { background: var(--warning); }
+
+  .emotions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .emotion-pill {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    text-align: center;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .emotion-pill.visible { opacity: 1; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .disclaimer {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Main Chat */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .topbar-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .topbar-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #e8f5ef;
+    color: var(--positive);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--positive);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Messages */
+  .messages-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    scroll-behavior: smooth;
+  }
+
+  .messages-area::-webkit-scrollbar { width: 4px; }
+  .messages-area::-webkit-scrollbar-track { background: transparent; }
+  .messages-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .welcome-banner {
+    text-align: center;
+    padding: 48px 24px 36px;
+    max-width: 520px;
+    margin: 0 auto 32px;
+  }
+
+  .welcome-icon {
+    width: 56px; height: 56px;
+    background: var(--accent-light);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .welcome-icon svg { width: 28px; height: 28px; }
+
+  .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+
+  .welcome-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .prompt-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chip:hover {
+    background: var(--accent-light);
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .avatar-bot {
+    background: var(--accent);
+    color: white;
+  }
+
+  .avatar-user {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .bubble {
+    max-width: 68%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  .bubble-bot {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    color: var(--text-primary);
+    box-shadow: var(--shadow);
+  }
+
+  .bubble-user {
+    background: var(--accent);
+    color: white;
+    border-top-right-radius: 4px;
+  }
+
+  .analysis-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 8px;
+    margin-right: 4px;
+  }
+
+  .tag-emotion { background: #eef2ff; color: #4f46e5; }
+  .tag-pattern { background: #fef9e8; color: #92690a; }
+  .tag-insight { background: #edf7f1; color: #2d7a54; }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    width: fit-content;
+    box-shadow: var(--shadow);
+  }
+
+  .typing-dot {
+    width: 7px; height: 7px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typing 1.2s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* Input */
+  .input-area {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 20px 32px;
+  }
+
+  .input-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-wrapper:focus-within {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(61,90,128,0.08);
+  }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    resize: none;
+    line-height: 1.6;
+    max-height: 120px;
+    min-height: 22px;
+  }
+
+  textarea::placeholder { color: var(--text-muted); }
+
+  .send-btn {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    opacity: 0.5;
+  }
+
+  .send-btn.active { opacity: 1; }
+  .send-btn:hover.active { background: #2d4a6e; transform: scale(1.05); }
+
+  .send-btn svg { width: 16px; height: 16px; fill: white; }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">MindLens</div>
+        <div class="logo-sub">Mental Analysis AI</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section" style="margin-top:20px;">
+    <div class="sidebar-label">Sentiment Analysis</div>
+    <div class="analysis-card">
+      <div class="analysis-card-title">Current Tone</div>
+      <div id="sentimentBadge" class="sentiment-badge badge-neutral">
+        <div class="dot dot-neutral"></div>
+        <span>Awaiting input</span>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">Emotional Intensity</div>
+      <div class="meter"><div class="meter-fill" id="intensityBar" style="width:0%;background:var(--accent)"></div></div>
+      <div class="meter-label"><span>Low</span><span id="intensityVal">—</span><span>High</span></div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">Stress Indicators</div>
+      <div class="meter"><div class="meter-fill" id="stressBar" style="width:0%;background:var(--warning)"></div></div>
+      <div class="meter-label"><span>Calm</span><span id="stressVal">—</span><span>Stressed</span></div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">Cognitive Load</div>
+      <div class="meter"><div class="meter-fill" id="cogBar" style="width:0%;background:var(--accent2)"></div></div>
+      <div class="meter-label"><span>Clear</span><span id="cogVal">—</span><span>Overwhelmed</span></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section" style="margin-top:16px;">
+    <div class="sidebar-label">Detected Emotions</div>
+    <div class="emotions-grid" id="emotionsGrid">
+      <div class="emotion-pill">—</div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="disclaimer">MindLens is an AI analysis tool and does not replace professional mental health care. If you're in crisis, please contact a mental health professional.</div>
+  </div>
+</aside>
+
+<!-- Main Chat -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Mental Health Analysis</div>
+      <div class="topbar-sub">AI-powered emotional intelligence & pattern recognition</div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      AI Active
+    </div>
+  </div>
+
+  <div class="messages-area" id="messagesArea">
+    <div class="welcome-banner">
+      <div class="welcome-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#3d5a80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a10 10 0 1 0 10 10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <div class="welcome-title">How are you feeling today?</div>
+      <div class="welcome-desc">Share what's on your mind. MindLens will analyze your emotional patterns, identify themes, and offer thoughtful insights based on what you express.</div>
+      <div class="prompt-chips">
+        <div class="chip" onclick="usePrompt(this)">I've been feeling overwhelmed lately</div>
+        <div class="chip" onclick="usePrompt(this)">I'm not sure why I feel anxious</div>
+        <div class="chip" onclick="usePrompt(this)">I've been having trouble sleeping</div>
+        <div class="chip" onclick="usePrompt(this)">Things feel meaningless right now</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="userInput" placeholder="Share what's on your mind…" rows="1" oninput="autoResize(this); toggleSend();" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
+  </div>
+</main>
+
+<script>
+const SYSTEM_PROMPT = `You are MindLens, a compassionate and analytical mental health AI assistant. Your role is to:
+
+1. Respond empathetically and thoughtfully to what the user shares
+2. Gently analyze their emotional state, cognitive patterns, and underlying themes
+3. Offer insights and reflections that help the user understand themselves better
+4. Ask clarifying or deepening questions when appropriate
+5. Suggest healthy coping strategies when relevant
+
+At the end of EVERY response, include a JSON block for UI analysis (the user won't see this):
+<ANALYSIS>
+{
+  "sentiment": "positive" | "negative" | "neutral" | "anxious" | "mixed",
+  "intensity": 0-100,
+  "stress": 0-100,
+  "cognitiveLoad": 0-100,
+  "emotions": ["array", "of", "detected", "emotions", "max 6"],
+  "tags": [
+    {"type": "emotion|pattern|insight", "label": "short label"}
+  ]
+}
+</ANALYSIS>
+
+Keep your conversational response warm, insightful, and human. Use paragraphs, not bullet points. Be direct but gentle. Never be dismissive.`;
+
+let conversationHistory = [];
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function toggleSend() {
+  const val = document.getElementById('userInput').value.trim();
+  const btn = document.getElementById('sendBtn');
+  btn.classList.toggle('active', val.length > 0);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (document.getElementById('userInput').value.trim()) sendMessage();
+  }
+}
+
+function usePrompt(el) {
+  const input = document.getElementById('userInput');
+  input.value = el.textContent;
+  autoResize(input);
+  toggleSend();
+  input.focus();
+}
+
+function appendMessage(role, text, tags) {
+  const area = document.getElementById('messagesArea');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar avatar-${role}`;
+  avatar.textContent = role === 'bot' ? 'ML' : 'You';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble bubble-${role}`;
+  bubble.innerHTML = `<div>${text.replace(/\n/g, '<br>')}</div>`;
+
+  if (tags && tags.length > 0) {
+    const tagRow = document.createElement('div');
+    tagRow.style.marginTop = '10px';
+    tags.forEach(t => {
+      const span = document.createElement('span');
+      span.className = `analysis-tag tag-${t.type}`;
+      span.textContent = t.label;
+      tagRow.appendChild(span);
+    });
+    bubble.appendChild(tagRow);
+  }
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('messagesArea');
+  const div = document.createElement('div');
+  div.className = 'message bot';
+  div.id = 'typingIndicator';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar avatar-bot';
+  avatar.textContent = 'ML';
+  const bubble = document.createElement('div');
+  bubble.className = 'typing-indicator';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function updateSidebar(data) {
+  // Sentiment badge
+  const badge = document.getElementById('sentimentBadge');
+  const sentimentMap = {
+    positive: { cls: 'badge-positive', dot: 'dot-positive', label: 'Positive' },
+    negative: { cls: 'badge-negative', dot: 'dot-negative', label: 'Negative' },
+    neutral: { cls: 'badge-neutral', dot: 'dot-neutral', label: 'Neutral' },
+    anxious: { cls: 'badge-anxious', dot: 'dot-anxious', label: 'Anxious' },
+    mixed: { cls: 'badge-neutral', dot: 'dot-neutral', label: 'Mixed' },
+  };
+  const s = sentimentMap[data.sentiment] || sentimentMap.neutral;
+  badge.className = `sentiment-badge ${s.cls}`;
+  badge.innerHTML = `<div class="dot ${s.dot}"></div><span>${s.label}</span>`;
+
+  // Meters
+  document.getElementById('intensityBar').style.width = data.intensity + '%';
+  document.getElementById('intensityVal').textContent = data.intensity + '%';
+  document.getElementById('stressBar').style.width = data.stress + '%';
+  document.getElementById('stressVal').textContent = data.stress + '%';
+  document.getElementById('cogBar').style.width = data.cognitiveLoad + '%';
+  document.getElementById('cogVal').textContent = data.cognitiveLoad + '%';
+
+  // Emotions grid
+  const grid = document.getElementById('emotionsGrid');
+  grid.innerHTML = '';
+  (data.emotions || []).forEach((em, i) => {
+    const pill = document.createElement('div');
+    pill.className = 'emotion-pill';
+    pill.textContent = em;
+    grid.appendChild(pill);
+    setTimeout(() => pill.classList.add('visible'), i * 80);
+  });
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  autoResize(input);
+  toggleSend();
+
+  appendMessage('user', text);
+
+  conversationHistory.push({ role: 'user', content: text });
+
+  showTyping();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    const fullText = data.content?.[0]?.text || '';
+
+    // Extract analysis JSON
+    const analysisMatch = fullText.match(/<ANALYSIS>([\s\S]*?)<\/ANALYSIS>/);
+    let analysis = null;
+    let displayText = fullText.replace(/<ANALYSIS>[\s\S]*?<\/ANALYSIS>/, '').trim();
+
+    if (analysisMatch) {
+      try { analysis = JSON.parse(analysisMatch[1].trim()); } catch(e) {}
+    }
+
+    removeTyping();
+    appendMessage('bot', displayText, analysis?.tags);
+
+    if (analysis) updateSidebar(analysis);
+
+    conversationHistory.push({ role: 'assistant', content: fullText });
+
+  } catch (err) {
+    removeTyping();
+    appendMessage('bot', 'I\'m sorry, I had trouble processing that. Please try again.');
+  }
+}
+</script>
+</body>
+</html>
